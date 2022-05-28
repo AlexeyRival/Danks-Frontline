@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class generator : NetworkBehaviour
 {
-    public GameObject[] fragaments;
+    public GameObject[] fragaments,pointsofinterest;
     public float step;
     public int iterx=50,itery=50;
     private bool isStarted;

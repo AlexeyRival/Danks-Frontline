@@ -7,13 +7,15 @@ public class enemy : NetworkBehaviour
 {
     public bool isTurret;
     public Material deadmat;
-    public GameObject nozzleend, nozzle, tower;
+    public GameObject nozzle, tower;
+    public GameObject[] nozzleend;
     public GameObject hpbar;
     public GameObject bullet,explosion;
     public GameObject target;
     public Vector3 targetpoint;
     public int agressiontimer;
     public int firerate = 5;
+    public bool isParallelNozzles=true;
     public float needgetdown=1f;
     public bool DEBUGisLinesShowing=false;
     public float tankspeed;
@@ -27,13 +29,26 @@ public class enemy : NetworkBehaviour
     private MeshRenderer m;
     public NetworkVariable<int> hp = new NetworkVariable<int>(100);
     private int localhp,maxhp;
+    private int localbulletcounter;
     [ServerRpc]
     void FireServerRpc(ServerRpcParams rpcParams = default)
     {
-        GameObject bul = Instantiate(bullet, nozzleend.transform.position, nozzleend.transform.rotation);
-        bul.GetComponent<NetworkObject>().Spawn();
-        bul.GetComponent<Rigidbody>().AddRelativeForce(-120f, 0, 0, ForceMode.Impulse);
-        Destroy(bul.gameObject, 2f);
+        int i;
+        if(isParallelNozzles){
+            for(i=0;i<nozzleend.Length;++i){
+            GameObject bul = Instantiate(bullet, nozzleend[i].transform.position, nozzleend[i].transform.rotation);
+            bul.GetComponent<NetworkObject>().Spawn();
+            bul.GetComponent<Rigidbody>().AddRelativeForce(-120f, 0, 0, ForceMode.Impulse);
+            Destroy(bul.gameObject, 2f);
+            }
+        }else{
+            i=localbulletcounter%nozzleend.Length;
+            GameObject bul = Instantiate(bullet, nozzleend[i].transform.position, nozzleend[i].transform.rotation);
+            bul.GetComponent<NetworkObject>().Spawn();
+            bul.GetComponent<Rigidbody>().AddRelativeForce(-120f, 0, 0, ForceMode.Impulse);
+            Destroy(bul.gameObject, 2f);
+            ++localbulletcounter;
+        }
     }
     // Start is called before the first frame update
     void Start()
@@ -127,7 +142,7 @@ public class enemy : NetworkBehaviour
                     if (Random.Range(0, 2) == 0 && Vector3.Distance(transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position) < 100f)
                     {
                         Debug.DrawRay(transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - transform.position, Color.cyan);
-                        Physics.Raycast(nozzleend.transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - nozzleend.transform.position, out hit);
+                        Physics.Raycast(nozzleend[0].transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - nozzleend[0].transform.position, out hit);
                         if (hit.collider&&hit.collider.gameObject == GameObject.FindGameObjectsWithTag("Player")[i]) 
                         {
                             target = GameObject.FindGameObjectsWithTag("Player")[i];

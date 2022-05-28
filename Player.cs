@@ -6,7 +6,8 @@ using UnityEngine;
 
 public class Player : NetworkBehaviour
 {
-    public GameObject tower, nozzle, cam,nozzleend;
+    public GameObject tower, nozzle, cam;
+    public GameObject[] nozzleend;
     public GameObject bullet;
     public Material crystall;
     private Rigidbody rb;
@@ -25,10 +26,12 @@ public class Player : NetworkBehaviour
     }
     [ServerRpc]
     void FireServerRpc(ServerRpcParams rpcParams = default) {
-        GameObject bul = Instantiate(bullet,nozzleend.transform.position,nozzleend.transform.rotation);
+        for(int i=0;i<nozzleend.Length;++i){
+        GameObject bul = Instantiate(bullet,nozzleend[i].transform.position,nozzleend[i].transform.rotation);
         bul.GetComponent<NetworkObject>().Spawn();
         bul.GetComponent<Rigidbody>().AddRelativeForce(-120f,0,0,ForceMode.Impulse);
         Destroy(bul.gameObject, 2f);
+    }
     }
 
     // Start is called before the first frame update
