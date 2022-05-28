@@ -64,6 +64,8 @@ public class Player : NetworkBehaviour
             }
             tower.transform.Rotate(0, mouse.x * 5f, 0);
             nozzle.transform.Rotate(0, 0, -mouse.y * 2f);
+            if(nozzle.transform.localRotation.z<-0.17f){nozzle.transform.localRotation=new Quaternion(nozzle.transform.localRotation.x,nozzle.transform.localRotation.y,-0.17f,nozzle.transform.localRotation.w);}
+            if(nozzle.transform.localRotation.z>0.03f){nozzle.transform.localRotation=new Quaternion(nozzle.transform.localRotation.x,nozzle.transform.localRotation.y,0.03f,nozzle.transform.localRotation.w);}
 
             if (!isMoving)
             {

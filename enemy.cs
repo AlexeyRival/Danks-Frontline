@@ -8,19 +8,25 @@ public class enemy : NetworkBehaviour
     public bool isTurret;
     public Material deadmat;
     public GameObject nozzleend, nozzle, tower;
+    public GameObject hpbar;
     public GameObject bullet,explosion;
     public GameObject target;
     public Vector3 targetpoint;
     public int agressiontimer;
     public int firerate = 5;
+    public float needgetdown=1f;
+    public bool DEBUGisLinesShowing=false;
     public float tankspeed;
     private float speed;
     private bool isMoving, isManeuver;
     private Rigidbody rb;
     private RaycastHit hit;
     private Vector3 buftrgt;
+    private float mindelta;
+    private int staytimer;
     private MeshRenderer m;
     public NetworkVariable<int> hp = new NetworkVariable<int>(100);
+    private int localhp,maxhp;
     [ServerRpc]
     void FireServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -33,6 +39,8 @@ public class enemy : NetworkBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        maxhp=hp.Value;
+       // localhp=hp.Value;
     }
     void AllChildBlack(Transform trans){
                 if(trans.TryGetComponent<MeshRenderer>(out m)){
@@ -55,6 +63,7 @@ public class enemy : NetworkBehaviour
             AllChildBlack(transform);
             if(isTurret)transform.Translate(0, 2, 0);
             rb.AddRelativeForce(Random.Range(-30,30), 500f, Random.Range(-30,30), ForceMode.Impulse);
+            hpbar.SetActive(false);
             enabled = false;
         }
         if (IsServer) {
@@ -71,15 +80,15 @@ public class enemy : NetworkBehaviour
                     if(!isTurret){
                         if(!isManeuver){
                             for(int i=0;i<5;++i){
-                                if(Vector3.Distance(transform.position,target.transform.position)<30)
+                                if(Vector3.Distance(transform.position,target.transform.position)<30&&Random.Range(0,3)==0)
                                     {
-                                        buftrgt=new Vector3(transform.position.x+Random.Range(-15f,15f),transform.position.y-1,transform.position.z+Random.Range(-15f,15f));
+                                        buftrgt=new Vector3(transform.position.x+Random.Range(-15f,15f),transform.position.y-needgetdown,transform.position.z+Random.Range(-15f,15f));
                                     }
                                 else
                                     {
-                                        buftrgt=new Vector3(target.transform.position.x+Random.Range(-15f,15f),target.transform.position.y-1,target.transform.position.z+Random.Range(-15f,15f));
+                                        buftrgt=new Vector3(target.transform.position.x+Random.Range(-15f,15f),target.transform.position.y-needgetdown,target.transform.position.z+Random.Range(-15f,15f));
                                     }
-                              //  Debug.DrawRay(transform.position+new Vector3(0,1f,0),buftrgt-transform.position,Color.white,4f);
+                              if(DEBUGisLinesShowing)  Debug.DrawRay(transform.position+new Vector3(0,1f,0),buftrgt-transform.position,Color.white,4f);
                                 Physics.Raycast(transform.position+new Vector3(0,1f,0), buftrgt-transform.position, out hit);
                                 if(!hit.transform||hit.transform.name=="пол")
                                 {
@@ -95,6 +104,9 @@ public class enemy : NetworkBehaviour
                             transform.Rotate(0,180,0);
                             if(speed>-10f){speed-=3f*Time.deltaTime;isMoving=true;}
                             if(rb.velocity.magnitude<10f){rb.AddRelativeForce(0,0,speed*tankspeed*Time.deltaTime);}
+                            if(mindelta-Vector3.Distance(transform.position, targetpoint)<0.1f){++staytimer;}else{staytimer=0;}
+                            if(staytimer==500){isManeuver=false;staytimer=0;}
+                            mindelta=Vector3.Distance(transform.position, targetpoint);
                         }else{
                             isManeuver=false;
                         }
@@ -116,7 +128,7 @@ public class enemy : NetworkBehaviour
                     {
                         Debug.DrawRay(transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - transform.position, Color.cyan);
                         Physics.Raycast(nozzleend.transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - nozzleend.transform.position, out hit);
-                        if (hit.collider.gameObject == GameObject.FindGameObjectsWithTag("Player")[i]) 
+                        if (hit.collider&&hit.collider.gameObject == GameObject.FindGameObjectsWithTag("Player")[i]) 
                         {
                             target = GameObject.FindGameObjectsWithTag("Player")[i];
                             agressiontimer = 1000;
@@ -124,6 +136,11 @@ public class enemy : NetworkBehaviour
                     }
                 }
             }
+        }
+        if(localhp!=hp.Value){
+            localhp=hp.Value;
+            hpbar.GetComponent<TextMesh>().text=localhp+"/"+maxhp;
+            hpbar.transform.GetChild(0).transform.localScale=new Vector3(10.23f/maxhp*localhp,1f,1.38f);
         }
     }
     private void OnDrawGizmos()
