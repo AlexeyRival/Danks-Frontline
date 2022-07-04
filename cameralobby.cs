@@ -23,6 +23,8 @@ public class cameralobby : MonoBehaviour
     {
         GUI.Box(new Rect(Screen.width * 0.5f - 100, Screen.height * 0.5f, 30, 30), "IP");
         ip = GUI.TextField(new Rect(Screen.width*0.5f-70,Screen.height*0.5f,200,30),ip);
+        if(GUI.Button(new Rect(Screen.width*0.5f+170,Screen.height*0.5f,100,20),"local")){ip="127.0.0.1";}
+        if(GUI.Button(new Rect(Screen.width*0.5f+270,Screen.height*0.5f,100,20),"rival")){ip="26.219.110.5";}
         GUI.Box(new Rect(Screen.width * 0.5f - 100, Screen.height * 0.5f+30, 30, 30), "Ник");
         nickname = GUI.TextField(new Rect(Screen.width*0.5f-70,Screen.height*0.5f+30,200,30),nickname);
         if (GUI.Button(new Rect(Screen.width * 0.5f - 100, Screen.height * 0.5f + 60, 100, 30), "Хост")) {
@@ -30,7 +32,7 @@ public class cameralobby : MonoBehaviour
             gameObject.SetActive(false);
         }
         if (GUI.Button(new Rect(Screen.width * 0.5f, Screen.height * 0.5f + 60, 100, 30), "Клиент")) {
-            manager.GetComponent<UnityTransport>().ConnectionData.Address= ip;
+         if(ip!="")manager.GetComponent<UnityTransport>().ConnectionData.Address= ip;
             NetworkManager.Singleton.StartClient();
             gameObject.SetActive(false);
         }

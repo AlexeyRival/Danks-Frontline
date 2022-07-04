@@ -6,15 +6,20 @@ using UnityEngine;
 
 public class Player : NetworkBehaviour
 {
-    public GameObject tower, nozzle, cam;
+    public GameObject tower, nozzle, cam,aviacam;
     public GameObject[] nozzleend;
-    public GameObject bullet;
+    public GameObject[] avianozzleend;
+    public GameObject[] rocketnozzleend;
+    public GameObject bullet,rocket;
+    public GameObject tank,avia;
     public Material crystall;
     private Rigidbody rb;
     private float speed;
     private Vector2 mouse;
     private bool isMoving;
+    public bool isAviaLocal;
     public NetworkVariable<int> hp = new NetworkVariable<int>(100);
+    public NetworkVariable<bool> isAvia=new NetworkVariable<bool>();
 
   //  public NetworkVariable<FixedString64Bytes> PlayerName = new NetworkVariable<FixedString64Bytes>(new FixedString64Bytes("Player"));
 
@@ -25,13 +30,48 @@ public class Player : NetworkBehaviour
       //  PlayerName.Value = new FixedString64Bytes(nickname);
     }
     [ServerRpc]
-    void FireServerRpc(ServerRpcParams rpcParams = default) {
-        for(int i=0;i<nozzleend.Length;++i){
-        GameObject bul = Instantiate(bullet,nozzleend[i].transform.position,nozzleend[i].transform.rotation);
-        bul.GetComponent<NetworkObject>().Spawn();
-        bul.GetComponent<Rigidbody>().AddRelativeForce(-120f,0,0,ForceMode.Impulse);
-        Destroy(bul.gameObject, 2f);
+    void SetAviaServerRpc(bool isAvia, ServerRpcParams rpcParams = default)
+    {
+      this.isAvia.Value=isAvia;
     }
+    [ServerRpc]
+    void FireServerRpc(bool isRocket,ServerRpcParams rpcParams = default)
+    {
+        if (!isRocket)
+        {
+            if (!isAvia.Value)
+            {
+                for (int i = 0; i < nozzleend.Length; ++i)
+                {
+                    GameObject bul = Instantiate(bullet, nozzleend[i].transform.position, nozzleend[i].transform.rotation);
+                    bul.GetComponent<NetworkObject>().Spawn();
+                    bul.GetComponent<Rigidbody>().AddRelativeForce(-120f, 0, 0, ForceMode.Impulse);
+                    Destroy(bul.gameObject, 2f);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < avianozzleend.Length; ++i)
+                {
+                    GameObject bul = Instantiate(bullet, avianozzleend[i].transform.position, avianozzleend[i].transform.rotation);
+                    bul.GetComponent<NetworkObject>().Spawn();
+                    bul.GetComponent<Rigidbody>().AddRelativeForce(-120f, 0, 0, ForceMode.Impulse);
+                    Destroy(bul.gameObject, 2f);
+                }
+
+            }
+        }
+        else
+        {
+            for (int i = 0; i < rocketnozzleend.Length; ++i)
+            {
+                GameObject bul = Instantiate(rocket, rocketnozzleend[i].transform.position, rocketnozzleend[i].transform.rotation);
+                bul.GetComponent<NetworkObject>().Spawn();
+                bul.GetComponent<Rigidbody>().AddRelativeForce(-110f, 0, 0, ForceMode.Impulse);
+                Destroy(bul.gameObject, 3f);
+            }
+
+        }
     }
 
     // Start is called before the first frame update
@@ -41,6 +81,7 @@ public class Player : NetworkBehaviour
         if (!IsLocalPlayer)
         {
             cam.SetActive(false);
+            aviacam.SetActive(false);
         }
         else 
         {
@@ -55,15 +96,16 @@ public class Player : NetworkBehaviour
     {
         if (IsLocalPlayer)
         {
+            if(!isAvia.Value){
             isMoving = false;
             mouse.x = Input.GetAxis("Mouse X");
             mouse.y = Input.GetAxis("Mouse Y");
-            if (Input.GetKey(KeyCode.W)) { if (speed == 5f) { speed = -5f; } if (speed > -10f) { speed -= 8f*Time.deltaTime; } isMoving = true; }
-            if (Input.GetKey(KeyCode.S)) { if (speed == -5f) { speed = 5f; } if (speed < 10f) { speed += 8f * Time.deltaTime; } isMoving = true; }
+            if (Input.GetKey(KeyCode.W)) { if (speed == 5f||Mathf.Abs(speed)<0.0001f) { speed = -5f; } if (speed > -10f) { speed -= 8f*Time.deltaTime; } isMoving = true; }
+            if (Input.GetKey(KeyCode.S)) { if (speed == -5f||Mathf.Abs(speed)<0.0001f) { speed = 5f; } if (speed < 10f) { speed += 8f * Time.deltaTime; } isMoving = true; }
             if (Input.GetKey(KeyCode.A)) { transform.Rotate(0, -1, 0); }
             if (Input.GetKey(KeyCode.D)) { transform.Rotate(0, 1, 0); }
             if (Input.GetKeyDown(KeyCode.Mouse0)) {
-                FireServerRpc();
+                FireServerRpc(false);
             }
             tower.transform.Rotate(0, mouse.x * 5f, 0);
             nozzle.transform.Rotate(0, 0, -mouse.y * 2f);
@@ -83,12 +125,47 @@ public class Player : NetworkBehaviour
             }
             if (rb.velocity.magnitude < 10f) { cam.GetComponent<Camera>().fieldOfView = 60; }
             // SubmitPositionRequestServerRpc(transform.position);
+            }
+            else{
+                isMoving=false;
+                mouse.x = Input.GetAxis("Mouse X");
+                mouse.y = Input.GetAxis("Mouse Y");
+                transform.Rotate(0,mouse.x*3f,mouse.y*3f);
+                if (Input.GetKey(KeyCode.W)) { if (speed > -20f) { speed -= 8f*Time.deltaTime; } isMoving = true; }
+                if (Input.GetKey(KeyCode.S)) { if (speed < -1f) { speed += 8f * Time.deltaTime; } isMoving = true; }
+                if (Input.GetKey(KeyCode.A)) { transform.Rotate(-2, 0, 0); }
+                if (Input.GetKey(KeyCode.D)) { transform.Rotate(2, 0, 0); }
+                if (Input.GetKeyDown(KeyCode.Mouse0)) {
+                FireServerRpc(false);
+                }
+                if (Input.GetKeyDown(KeyCode.Mouse1))
+                {
+                    FireServerRpc(true);
+                }
+                if (!isMoving)
+                {
+                if (speed < -5f) { speed += 7f * Time.deltaTime;  }}
+                transform.Translate(speed*0.1f,0,0);
+                    aviacam.GetComponent<Camera>().fieldOfView = 60 - speed;
+            }
+            if(isAvia.Value!=isAviaLocal){
+                isAviaLocal=isAvia.Value;
+                tank.SetActive(!isAviaLocal);
+                avia.SetActive(isAviaLocal);
+                rb.useGravity=!isAviaLocal;
+                rb.freezeRotation=isAviaLocal;
+                if(isAviaLocal){
+                    transform.position=transform.position+ new Vector3(0,-transform.position.y+50,0);
+                    speed=-1f;
+                }
+                }
 
 
             ///DEBUG MODE
             if (Input.GetKeyDown(KeyCode.F1)) {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+                NetworkManager.Singleton.Shutdown();
                 Application.LoadLevel(0);
             }
             if (Input.GetKeyDown(KeyCode.F2)) {
@@ -109,15 +186,29 @@ public class Player : NetworkBehaviour
             if (Input.GetKeyDown(KeyCode.F6)) {
                 rb.isKinematic = false;
             }
+            if (Input.GetKeyDown(KeyCode.F7)) {
+                SetAviaServerRpc(true);
+            }
+            if (Input.GetKeyDown(KeyCode.F8)) {
+                SetAviaServerRpc(false);
+            }
         }
         else {
+            if(isAvia.Value!=isAviaLocal){
+                isAviaLocal=isAvia.Value;
+                tank.SetActive(!isAviaLocal);
+                avia.SetActive(isAviaLocal);
+                }
            // transform.position = Position.Value;
         }
+
+
+        
     }
     private void OnCollisionEnter(Collision collision)
     {
         if (IsServer) {
-            if (collision.gameObject.name == "Shell(Clone)")
+            if (collision.gameObject.name == "Shell(Clone)" || collision.gameObject.CompareTag("Shell"))
             {
                 hp.Value -= 15;
             }

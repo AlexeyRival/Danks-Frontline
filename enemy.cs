@@ -74,10 +74,11 @@ public class enemy : NetworkBehaviour
             rb.isKinematic = false;
             GameObject exp =Instantiate(explosion,transform.position,transform.rotation);
             Destroy(exp.transform.GetChild(0).gameObject,0.3f);
-            Destroy(exp,3f);
+            Destroy(exp,8f);
             AllChildBlack(transform);
             if(isTurret)transform.Translate(0, 2, 0);
-            rb.AddRelativeForce(Random.Range(-30,30), 500f, Random.Range(-30,30), ForceMode.Impulse);
+            transform.Rotate(Random.Range(-30,30),Random.Range(-30,30),Random.Range(-30,30));
+            rb.AddRelativeForce(Random.Range(-30,30)*10, 500f, Random.Range(-30,30)*10, ForceMode.Impulse);
             hpbar.SetActive(false);
             enabled = false;
         }
@@ -143,9 +144,9 @@ public class enemy : NetworkBehaviour
                     {
                         Debug.DrawRay(transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - transform.position, Color.cyan);
                         Physics.Raycast(nozzleend[0].transform.position, GameObject.FindGameObjectsWithTag("Player")[i].transform.position - nozzleend[0].transform.position, out hit);
-                        if (hit.collider&&hit.collider.gameObject == GameObject.FindGameObjectsWithTag("Player")[i]) 
+                        if (hit.transform&&hit.transform.CompareTag("Player")) 
                         {
-                            target = GameObject.FindGameObjectsWithTag("Player")[i];
+                            target = hit.transform.gameObject;
                             agressiontimer = 1000;
                         }
                     }
@@ -160,7 +161,7 @@ public class enemy : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        if (target) {
+        if (target&&agressiontimer>0) {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(target.transform.position,1f);
         }
@@ -169,7 +170,7 @@ public class enemy : NetworkBehaviour
     {
         if (IsServer)
         {
-            if (collision.gameObject.name == "Shell(Clone)")
+            if (collision.gameObject.name == "Shell(Clone)"||collision.gameObject.CompareTag("Shell"))
             {
                 hp.Value -= 15;
             }
